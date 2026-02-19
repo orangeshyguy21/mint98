@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mint Activity Simulator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Geneva, sans-serif;
+    font-size: 11px;
+    background: #008080;
+    color: #000;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-top: 30px;
+  }
+
+  /* -- Window frame -- */
+  .window {
+    background: #c0c0c0;
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #404040;
+    border-bottom: 2px solid #404040;
+    box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+    width: 90vw;
+    max-width: 900px;
+    padding: 3px;
+  }
+
+  .title-bar {
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 3px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 3px;
+    user-select: none;
+  }
+  .title-bar-controls { display: flex; gap: 2px; }
+  .title-bar-controls button {
+    width: 16px; height: 14px; font-size: 8px; padding: 0; line-height: 12px;
+    background: #c0c0c0;
+    border-top: 1px solid #fff; border-left: 1px solid #fff;
+    border-right: 1px solid #404040; border-bottom: 1px solid #404040;
+    box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+    cursor: pointer; text-align: center; min-width: 0;
+  }
+
+  .window-body { padding: 8px; }
+
+  /* -- Groupbox / fieldset -- */
+  fieldset {
+    border: 2px groove #c0c0c0;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+  legend {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+
+  /* -- Raised/sunken helpers -- */
+  .sunken {
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #fff; border-bottom: 1px solid #fff;
+    box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+  }
+
+  /* -- Form rows -- */
+  .form-row {
+    display: flex; align-items: center; margin-bottom: 6px;
+  }
+  .form-row .lbl {
+    width: 110px; flex-shrink: 0; text-align: right; padding-right: 8px;
+  }
+  .form-row input[type="range"] { flex: 1; }
+  .form-row .val {
+    width: 44px; text-align: right; padding-left: 6px;
+    font-family: "Fixedsys", "Courier New", monospace; font-size: 11px;
+  }
+
+  /* -- Inputs -- */
+  select, input[type="text"], input[type="number"] {
+    font-family: "MS Sans Serif", Tahoma, sans-serif; font-size: 11px;
+    background: #fff; color: #000;
+    padding: 2px 4px;
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #fff; border-bottom: 1px solid #fff;
+    box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+    outline: none;
+  }
+  select { width: 100%; margin-bottom: 4px; }
+  input[type="text"] { width: 100%; }
+  input[type="number"] { width: 70px; }
+  input[type="text"]:focus, select:focus, input[type="number"]:focus {
+    outline: 1px dotted #000;
+  }
+
+  /* -- Radio buttons -- */
+  .radio-group { display: flex; gap: 16px; margin: 4px 0; }
+  .radio-group label { cursor: pointer; display: flex; align-items: center; gap: 3px; }
+
+  /* -- 98-style buttons -- */
+  button, .btn98 {
+    font-family: "MS Sans Serif", Tahoma, sans-serif; font-size: 11px;
+    background: #c0c0c0;
+    padding: 3px 14px;
+    min-width: 72px;
+    border-top: 2px solid #fff; border-left: 2px solid #fff;
+    border-right: 2px solid #404040; border-bottom: 2px solid #404040;
+    box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #808080;
+    cursor: pointer;
+    outline: none;
+  }
+  button:active:not(:disabled) {
+    border-top: 2px solid #404040; border-left: 2px solid #404040;
+    border-right: 2px solid #fff; border-bottom: 2px solid #fff;
+    box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #dfdfdf;
+    padding: 4px 13px 2px 15px;
+  }
+  button:disabled { color: #808080; text-shadow: 1px 1px 0 #fff; cursor: default; }
+  button:focus { outline: 1px dotted #000; outline-offset: -4px; }
+  button.small { min-width: 0; padding: 3px 10px; }
+
+  /* -- Controls bar -- */
+  .controls {
+    display: flex; gap: 6px; align-items: center; margin-bottom: 8px;
+    padding: 4px 0;
+  }
+
+  .status-badge {
+    font-size: 11px; padding: 1px 8px; margin-left: 6px;
+    font-weight: bold;
+  }
+  .status-badge.running { color: #008000; }
+  .status-badge.stopped { color: #808080; }
+
+  .spacer { flex: 1; }
+
+  /* -- Status bar -- */
+  .status-bar {
+    display: flex; margin-top: 4px;
+    border-top: 1px solid #808080;
+    padding-top: 3px;
+  }
+  .status-bar span {
+    padding: 1px 6px; font-size: 11px; color: #444;
+    border-top: 1px solid #808080; border-left: 1px solid #808080;
+    border-right: 1px solid #fff; border-bottom: 1px solid #fff;
+    box-shadow: inset 1px 1px 0 #404040;
+    flex: 1;
+  }
+
+  /* -- Log area -- */
+  #log {
+    background: #fff;
+    font-family: "Fixedsys", "Courier New", monospace;
+    font-size: 12px;
+    height: 280px;
+    overflow-y: scroll;
+    padding: 4px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.4;
+    color: #000;
+  }
+  #log .line-mint  { color: #008000; }
+  #log .line-melt  { color: #808000; }
+  #log .line-swap  { color: #000080; }
+  #log .line-error { color: #ff0000; }
+  #log .line-info  { color: #808080; }
+  #log .line-sys   { color: #800080; font-weight: bold; }
+
+  /* -- Two-column layout for top section -- */
+  .two-col { display: flex; gap: 8px; }
+  .two-col > * { flex: 1; }
+  @media (max-width: 600px) { .two-col { flex-direction: column; } }
+
+  .node-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+  @media (max-width: 600px) { .node-grid { grid-template-columns: 1fr; } }
+
+  /* -- Balance table -- */
+  .balance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .balance-table th {
+    text-align: left;
+    padding: 2px 8px 2px 4px;
+    border-bottom: 1px solid #808080;
+    font-weight: bold;
+  }
+  .balance-table td {
+    padding: 3px 8px 3px 4px;
+    font-family: "Fixedsys", "Courier New", monospace;
+  }
+  .balance-table tr:nth-child(even) td { background: #d4d0c8; }
+  .bal-val { font-weight: bold; }
+
+  /* -- Manual ops row -- */
+  .manual-ops {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  }
+  .manual-ops label { display: flex; align-items: center; gap: 4px; margin-bottom: 0; }
+</style>
+</head>
+<body>
+
+<div class="window">
+  <!-- Title Bar -->
+  <div class="title-bar">
+    <span>Cashu Mint Activity Simulator</span>
+    <div class="title-bar-controls">
+      <button>_</button>
+      <button>X</button>
+    </div>
+  </div>
+
+  <div class="window-body">
+
+    <div class="two-col">
+      <!-- Mint Config -->
+      <fieldset>
+        <legend>Mint</legend>
+        <div class="form-row">
+          <span class="lbl">Mint URL:</span>
+          <div style="flex:1">
+            <select id="mintUrl">
+              <option>http://localhost:5551</option>
+              <option>http://localhost:3338</option>
+            </select>
+            <input type="text" id="mintUrlCustom" placeholder="Custom URL..." />
+          </div>
+        </div>
+        <div class="form-row">
+          <span class="lbl">Unit:</span>
+          <div class="radio-group">
+            <label><input type="radio" name="unit" value="sat" checked /> sat (BTC)</label>
+            <label><input type="radio" name="unit" value="usd" /> usd</label>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Parameters -->
+      <fieldset>
+        <legend>Parameters</legend>
+        <div class="form-row">
+          <span class="lbl">Min Amount:</span>
+          <input type="range" id="minAmount" min="1" max="1000" value="10" />
+          <span class="val" id="minAmountVal">10</span>
+        </div>
+        <div class="form-row">
+          <span class="lbl">Max Amount:</span>
+          <input type="range" id="maxAmount" min="1" max="5000" value="500" />
+          <span class="val" id="maxAmountVal">500</span>
+        </div>
+        <div class="form-row">
+          <span class="lbl">Min Delay (s):</span>
+          <input type="range" id="minDelay" min="1" max="120" value="5" />
+          <span class="val" id="minDelayVal">5</span>
+        </div>
+        <div class="form-row">
+          <span class="lbl">Max Delay (s):</span>
+          <input type="range" id="maxDelay" min="1" max="300" value="30" />
+          <span class="val" id="maxDelayVal">30</span>
+        </div>
+        <div class="form-row">
+          <span class="lbl">Min Balance:</span>
+          <input type="range" id="minBalance" min="1" max="500" value="20" />
+          <span class="val" id="minBalanceVal">20</span>
+        </div>
+      </fieldset>
+    </div>
+
+    <!-- Balances -->
+    <fieldset>
+      <legend>Balances</legend>
+      <table class="balance-table">
+        <thead>
+          <tr><th>Mint</th><th>Balance</th></tr>
+        </thead>
+        <tbody id="balanceBody">
+          <tr><td colspan="2" style="color:#808080;">Click "Refresh Balances" to load</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:6px;">
+        <button id="btnRefreshBal" class="small">Refresh Balances</button>
+        <span id="balSpinner" style="display:none; color:#808080; margin-left:6px;">Querying...</span>
+      </div>
+    </fieldset>
+
+    <!-- Nodes -->
+    <fieldset>
+      <legend>LND Nodes (docker containers)</legend>
+      <div class="node-grid">
+        <div class="form-row">
+          <span class="lbl">Funding Node:</span>
+          <input type="text" id="fundingNode" value="polar-n4-bob" />
+        </div>
+        <div class="form-row">
+          <span class="lbl">Invoice Node:</span>
+          <input type="text" id="invoiceNode" value="polar-n4-frank" />
+        </div>
+        <div class="form-row">
+          <span class="lbl">Backup Node:</span>
+          <input type="text" id="backupNode" value="polar-n4-dave" />
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Manual Operations -->
+    <fieldset>
+      <legend>Manual Operations</legend>
+      <div class="manual-ops">
+        <label>Amount: <input type="number" id="manualAmount" value="100" min="1" /></label>
+        <button id="btnMint">Mint</button>
+        <button id="btnMelt">Melt</button>
+        <button id="btnSwap">Swap</button>
+        <span id="manualSpinner" style="display:none; color:#808080;">Working...</span>
+      </div>
+    </fieldset>
+
+    <!-- Auto Sim Controls -->
+    <div class="controls">
+      <button id="btnStart">Auto Start</button>
+      <button id="btnStop" disabled>Auto Stop</button>
+      <span id="status" class="status-badge stopped">Stopped</span>
+      <span class="spacer"></span>
+      <button id="btnClear">Clear Log</button>
+    </div>
+
+    <!-- Log -->
+    <fieldset>
+      <legend>Log Output</legend>
+      <div id="log" class="sunken"></div>
+    </fieldset>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span id="statusBarText">Ready</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // --- All known mint URLs (from the select options) ---
+  const MINT_URLS = Array.from(document.getElementById("mintUrl").options).map(o => o.value);
+
+  // --- Wire up range sliders ---
+  for (const id of ["minAmount","maxAmount","minDelay","maxDelay","minBalance"]) {
+    const slider = document.getElementById(id);
+    const display = document.getElementById(id + "Val");
+    slider.addEventListener("input", () => display.textContent = slider.value);
+  }
+
+  // --- Collect params ---
+  function getParams() {
+    const custom = document.getElementById("mintUrlCustom").value.trim();
+    return {
+      mintUrl: custom || document.getElementById("mintUrl").value,
+      unit: document.querySelector('input[name="unit"]:checked').value,
+      minAmount: +document.getElementById("minAmount").value,
+      maxAmount: +document.getElementById("maxAmount").value,
+      minDelay:  +document.getElementById("minDelay").value,
+      maxDelay:  +document.getElementById("maxDelay").value,
+      minBalance:+document.getElementById("minBalance").value,
+      fundingNode: document.getElementById("fundingNode").value,
+      invoiceNode: document.getElementById("invoiceNode").value,
+      backupNode:  document.getElementById("backupNode").value,
+    };
+  }
+
+  // --- Log output ---
+  const log = document.getElementById("log");
+
+  function classifyLine(text) {
+    if (text.startsWith("---")) return "line-sys";
+    if (text.includes("[MINT]"))  return "line-mint";
+    if (text.includes("[MELT]"))  return "line-melt";
+    if (text.includes("[SWAP]"))  return "line-swap";
+    if (text.includes("[ERROR]")) return "line-error";
+    return "line-info";
+  }
+
+  function appendLog(text) {
+    const span = document.createElement("span");
+    span.className = classifyLine(text);
+    span.textContent = text + "\n";
+    log.appendChild(span);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // --- SSE ---
+  const evtSource = new EventSource("/events");
+  evtSource.onmessage = (e) => appendLog(JSON.parse(e.data));
+  evtSource.addEventListener("status", (e) => {
+    const { running } = JSON.parse(e.data);
+    setRunning(running);
+  });
+
+  // --- Auto sim buttons ---
+  const btnStart = document.getElementById("btnStart");
+  const btnStop  = document.getElementById("btnStop");
+  const statusEl = document.getElementById("status");
+  const statusBar = document.getElementById("statusBarText");
+
+  function setRunning(running) {
+    btnStart.disabled = running;
+    btnStop.disabled  = !running;
+    statusEl.textContent = running ? "Running" : "Stopped";
+    statusEl.className   = "status-badge " + (running ? "running" : "stopped");
+    statusBar.textContent = running ? "Simulator is running..." : "Ready";
+  }
+
+  btnStart.addEventListener("click", async () => {
+    const res = await fetch("/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(getParams()),
+    });
+    if (res.ok) setRunning(true);
+  });
+
+  btnStop.addEventListener("click", async () => {
+    await fetch("/stop", { method: "POST" });
+  });
+
+  document.getElementById("btnClear").addEventListener("click", () => {
+    log.innerHTML = "";
+  });
+
+  // --- Balances ---
+  const balanceBody = document.getElementById("balanceBody");
+  const balSpinner  = document.getElementById("balSpinner");
+
+  async function refreshBalances() {
+    balSpinner.style.display = "inline";
+    const params = getParams();
+    try {
+      const res = await fetch("/balance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...params, mintUrls: MINT_URLS }),
+      });
+      const data = await res.json();
+      balanceBody.innerHTML = "";
+      for (const [url, bal] of Object.entries(data)) {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td>' + url + '</td>' +
+          '<td class="bal-val">' + bal + '</td>';
+        balanceBody.appendChild(tr);
+      }
+    } catch (err) {
+      balanceBody.innerHTML = '<tr><td colspan="2" style="color:red;">Error fetching balances</td></tr>';
+    }
+    balSpinner.style.display = "none";
+  }
+
+  document.getElementById("btnRefreshBal").addEventListener("click", refreshBalances);
+
+  // --- Manual operations ---
+  const manualSpinner = document.getElementById("manualSpinner");
+
+  async function doManualOp(op) {
+    const amount = +document.getElementById("manualAmount").value;
+    if (!amount || amount < 1) return;
+    const params = getParams();
+
+    // Disable buttons while running
+    for (const id of ["btnMint","btnMelt","btnSwap"]) document.getElementById(id).disabled = true;
+    manualSpinner.style.display = "inline";
+    statusBar.textContent = "Running manual " + op + "...";
+
+    try {
+      await fetch("/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...params, op, amount }),
+      });
+    } catch (err) {
+      appendLog("--- Manual " + op + " request failed ---");
+    }
+
+    for (const id of ["btnMint","btnMelt","btnSwap"]) document.getElementById(id).disabled = false;
+    manualSpinner.style.display = "none";
+    statusBar.textContent = "Ready";
+    refreshBalances();
+  }
+
+  document.getElementById("btnMint").addEventListener("click", () => doManualOp("mint"));
+  document.getElementById("btnMelt").addEventListener("click", () => doManualOp("melt"));
+  document.getElementById("btnSwap").addEventListener("click", () => doManualOp("swap"));
+
+  // --- Init ---
+  fetch("/status").then(r => r.json()).then(d => setRunning(d.running));
+  refreshBalances();
+</script>
+</body>
+</html>
